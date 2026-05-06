@@ -466,6 +466,9 @@ my ($now, $date, $time) = stf::stfUtility->getNow(date => $TRUE, time => $TRUE);
 	_log("");
     _log("Script generation completed");
     _log("");
+
+my $java_home_runtime = $ENV{'JAVA_HOME'} || $javahome_generation;
+generate_testkeys_dynamic($java_home_runtime);
    
     # Read names of execute scripts to run from text file
     my @executeStages = ();
@@ -876,6 +879,51 @@ sub deleteDirectory {
                 }
             }
         }
+}
+
+sub find_aqa_repo_root {
+    my $test_root = stfArguments::get_argument("test-root");
+
+    die "test-root not set, cannot locate aqa-systemtest repo"
+        if (!defined $test_root || $test_root eq "null");
+
+    my $abs = abs_path($test_root);
+
+    # Remove trailing openjdk.test.jlm
+    $abs =~ s#[/\\]openjdk\.test\.jlm.*$##;
+
+    return $abs;
+}
+
+sub generate_testkeys_dynamic {
+    my ($java_home) = @_;
+
+    my $ip = get_local_ip();
+    die "Unable to determine local IP" unless $ip;
+
+    my $san = "SAN=dns:localhost,ip:127.0.0.1,ip:$ip";
+
+    # ✅ Get correct repo root
+    my $repo_root = find_aqa_repo_root();
+
+    my $keystore_path = "$repo_root/openjdk.test.jlm/src/test.jlm/net/adoptopenjdk/test/jlm/testkeys";
+
+    my $dir = dirname($keystore_path);
+    mkpath($dir) unless -d $dir;
+
+    unlink $keystore_path if -f $keystore_path;
+
+    my $keytool = "$java_home/bin/keytool";
+    $keytool .= ".exe" if ($^O eq 'MSWin32');
+
+    my $cmd = "$keytool -genkeypair -alias rsakey -keyalg RSA -keysize 2048 ".
+              "-keystore \"$keystore_path\" -storepass passphrase -keypass passphrase ".
+              "-validity 365 -dname \"CN=JTC\" -ext \"$san\"";
+
+    _log("Generating testkeys at: $keystore_path");
+    _log("Using SAN: $san");
+
+    system($cmd) == 0 or die "Failed to generate testkeys";
 }
 
 # Simple internal method for logging.
