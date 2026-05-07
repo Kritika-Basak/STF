@@ -901,8 +901,7 @@ sub find_aqa_repo_root {
     my $aqa_root = abs_path("$Bin/../../../aqa-systemtest");
     die "Unable to locate aqa-systemtest repo at $aqa_root"
         unless defined $aqa_root && -d $aqa_root;
-    _log("DEBUG resolved aqa-systemtest root = $aqa_root");
-    return $aqa_root;
+   return $aqa_root;
 }
 
 sub generate_testkeys {
