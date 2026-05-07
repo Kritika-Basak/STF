@@ -467,8 +467,7 @@ my ($now, $date, $time) = stf::stfUtility->getNow(date => $TRUE, time => $TRUE);
     _log("Script generation completed");
     _log("");
 
-my $java_home_runtime = $ENV{'JAVA_HOME'} || $javahome_generation;
-generate_testkeys_dynamic($java_home_runtime);
+generate_testkeys($javahome_generation);
    
     # Read names of execute scripts to run from text file
     my @executeStages = ();
@@ -882,66 +881,45 @@ sub deleteDirectory {
 }
 
 sub get_local_ip {
-    my $ip;
-
+    my $ip="";
     if ($^O eq 'MSWin32') {
         my $out = `ipconfig`;
         ($ip) = $out =~ /IPv4 Address[.\s]*:\s*([\d\.]+)/;
     } else {
         $ip = `hostname -I 2>/dev/null`;
-
         if (!$ip) {
             my $out = `ifconfig 2>/dev/null`;
             ($ip) = $out =~ /inet\s+([\d\.]+)/;
         }
     }
-
     chomp($ip);
-
-    # Handle multiple IPs
     $ip = (split(/\s+/, $ip))[0];
-
     return $ip;
 }
 
 sub find_aqa_repo_root {
-    my $aqa_root = "$Bin/../../../aqa-systemtest";
-
-    my $abs = abs_path($aqa_root);
-
+    my $aqa_root = abs_path("$Bin/../../../aqa-systemtest");
     die "Unable to locate aqa-systemtest repo at $aqa_root"
-        unless defined $abs && -d $abs;
-
-    _log("DEBUG resolved aqa-systemtest root = $abs");
-
-    return $abs;
+        unless defined $aqa_root && -d $aqa_root;
+    _log("DEBUG resolved aqa-systemtest root = $aqa_root");
+    return $aqa_root;
 }
 
-sub generate_testkeys_dynamic {
+sub generate_testkeys {
     my ($java_home) = @_;
-
     my $ip = get_local_ip();
     die "Unable to determine local IP" unless $ip;
-
     my $san = "SAN=dns:localhost,ip:127.0.0.1,ip:$ip";
-
-    # ✅ Get correct repo root
     my $repo_root = find_aqa_repo_root();
-
     my $keystore_path = "$repo_root/openjdk.test.jlm/src/test.jlm/net/adoptopenjdk/test/jlm/testkeys";
-
 	unlink $keystore_path if -f $keystore_path;
-
     my $keytool = "$java_home/bin/keytool";
     $keytool .= ".exe" if ($^O eq 'MSWin32');
-
     my $cmd = "$keytool -genkeypair -alias rsakey -keyalg RSA -keysize 2048 ".
               "-keystore \"$keystore_path\" -storepass passphrase -keypass passphrase ".
               "-validity 365 -dname \"CN=JTC\" -ext \"$san\"";
-
     _log("Generating testkeys at: $keystore_path");
     _log("Using SAN: $san");
-
     system($cmd) == 0 or die "Failed to generate testkeys";
 }
 
