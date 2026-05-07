@@ -881,6 +881,29 @@ sub deleteDirectory {
         }
 }
 
+sub get_local_ip {
+    my $ip;
+
+    if ($^O eq 'MSWin32') {
+        my $out = `ipconfig`;
+        ($ip) = $out =~ /IPv4 Address[.\s]*:\s*([\d\.]+)/;
+    } else {
+        $ip = `hostname -I 2>/dev/null`;
+
+        if (!$ip) {
+            my $out = `ifconfig 2>/dev/null`;
+            ($ip) = $out =~ /inet\s+([\d\.]+)/;
+        }
+    }
+
+    chomp($ip);
+
+    # Handle multiple IPs
+    $ip = (split(/\s+/, $ip))[0];
+
+    return $ip;
+}
+
 sub find_aqa_repo_root {
     my $test_root = stfArguments::get_argument("test-root");
 
