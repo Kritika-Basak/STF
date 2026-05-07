@@ -905,15 +905,14 @@ sub get_local_ip {
 }
 
 sub find_aqa_repo_root {
-    my $test_root = stfArguments::get_argument("test-root");
+    my $aqa_root = "$Bin/../../../aqa-systemtest";
 
-    die "test-root not set, cannot locate aqa-systemtest repo"
-        if (!defined $test_root || $test_root eq "null");
+    my $abs = abs_path($aqa_root);
 
-    my $abs = abs_path($test_root);
+    die "Unable to locate aqa-systemtest repo at $aqa_root"
+        unless defined $abs && -d $abs;
 
-    # Remove trailing openjdk.test.jlm
-    $abs =~ s#[/\\]openjdk\.test\.jlm.*$##;
+    _log("DEBUG resolved aqa-systemtest root = $abs");
 
     return $abs;
 }
@@ -931,10 +930,7 @@ sub generate_testkeys_dynamic {
 
     my $keystore_path = "$repo_root/openjdk.test.jlm/src/test.jlm/net/adoptopenjdk/test/jlm/testkeys";
 
-    my $dir = dirname($keystore_path);
-    mkpath($dir) unless -d $dir;
-
-    unlink $keystore_path if -f $keystore_path;
+	unlink $keystore_path if -f $keystore_path;
 
     my $keytool = "$java_home/bin/keytool";
     $keytool .= ".exe" if ($^O eq 'MSWin32');
