@@ -880,21 +880,24 @@ sub deleteDirectory {
         }
 }
 
-sub get_local_ip {
-    my $ip="";
+sub get_local_ips {
+    my @ips;
+
     if ($^O eq 'MSWin32') {
         my $out = `ipconfig`;
-        ($ip) = $out =~ /IPv4 Address[.\s]*:\s*([\d\.]+)/;
+        while ($out =~ /IPv4 Address[.\s]*:\s*([\d\.]+)/g) {
+            push @ips, $1;
+        }
     } else {
-        $ip = `hostname -I 2>/dev/null`;
-        if (!$ip) {
-            my $out = `ifconfig 2>/dev/null`;
-            ($ip) = $out =~ /inet\s+([\d\.]+)/;
+        my $out = `hostname -I 2>/dev/null`;
+        chomp($out);
+
+        foreach my $ip (split(/\s+/, $out)) {
+            push @ips, $ip if $ip =~ /^\d+\.\d+\.\d+\.\d+$/;
         }
     }
-    chomp($ip);
-    $ip = (split(/\s+/, $ip))[0];
-    return $ip;
+
+    return @ips;
 }
 
 sub find_aqa_repo_root {
@@ -906,9 +909,14 @@ sub find_aqa_repo_root {
 
 sub generate_testkeys {
     my ($java_home) = @_;
-    my $ip = get_local_ip();
-    die "Unable to determine local IP" unless $ip;
-    my $san = "SAN=dns:localhost,ip:127.0.0.1,ip:$ip";
+    my @ips = get_local_ips();
+    die "Unable to determine local IP" unless @ips;
+    my $san = "SAN=dns:localhost,ip:127.0.0.1";
+
+	foreach my $ip (@ips) {
+    $san .= ",ip:$ip";
+	}
+	
     my $repo_root = find_aqa_repo_root();
     my $keystore_path = "$repo_root/openjdk.test.jlm/src/test.jlm/net/adoptopenjdk/test/jlm/testkeys";
 	unlink $keystore_path if -f $keystore_path;
