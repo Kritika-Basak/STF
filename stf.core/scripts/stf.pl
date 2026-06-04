@@ -900,7 +900,7 @@ sub get_local_ips {
         }
 		if (!@ips) {
 
-            	my $ifconfig_out = /usr/sbin/ifconfig -a 2>/dev/null`;
+            	my $ifconfig_out = `/usr/sbin/ifconfig -a 2>/dev/null`;
 
             	while ($ifconfig_out =~ /inet\s+([\d\.]+)/g) {
 
