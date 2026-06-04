@@ -884,19 +884,32 @@ sub get_local_ips {
     my @ips;
 
     if ($^O eq 'MSWin32') {
+	
         my $out = `ipconfig`;
+		
         while ($out =~ /IPv4 Address[.\s]*:\s*([\d\.]+)/g) {
             push @ips, $1;
         }
     } else {
         my $out = `hostname -I 2>/dev/null`;
+		
         chomp($out);
 
         foreach my $ip (split(/\s+/, $out)) {
             push @ips, $ip if $ip =~ /^\d+\.\d+\.\d+\.\d+$/;
         }
-    }
+		if (!@ips) {
 
+            	my $ifconfig_out = `ifconfig 2>/dev/null`;
+
+            	while ($ifconfig_out =~ /inet\s+([\d\.]+)/g) {
+
+                	next if $1 eq "127.0.0.1";
+
+                push @ips, $1;
+            }
+		}
+	}	
     return @ips;
 }
 
