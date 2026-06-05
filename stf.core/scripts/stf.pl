@@ -913,13 +913,6 @@ sub get_local_ips {
     return @ips;
 }
 
-sub find_aqa_repo_root {
-    my $aqa_root = abs_path("$Bin/../../../aqa-systemtest");
-    die "Unable to locate aqa-systemtest repo at $aqa_root"
-        unless defined $aqa_root && -d $aqa_root;
-   return $aqa_root;
-}
-
 sub generate_testkeys {
     my ($java_home) = @_;
     my @ips = get_local_ips();
@@ -930,8 +923,12 @@ sub generate_testkeys {
     $san .= ",ip:$ip";
 	}
 	
-    my $repo_root = find_aqa_repo_root();
-    my $keystore_path = "$repo_root/openjdk.test.jlm/src/test.jlm/net/adoptopenjdk/test/jlm/testkeys";
+    my $aqa_root = abs_path("$Bin/../../../aqa-systemtest");
+
+	die "Unable to locate aqa-systemtest repo at $aqa_root"
+    unless defined $aqa_root && -d $aqa_root;
+	
+    my $keystore_path = "$aqa_root/openjdk.test.jlm/src/test.jlm/net/adoptopenjdk/test/jlm/testkeys";
 	unlink $keystore_path if -f $keystore_path;
     my $keytool = "$java_home/bin/keytool";
     $keytool .= ".exe" if ($^O eq 'MSWin32');
