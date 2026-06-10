@@ -898,6 +898,19 @@ sub get_local_ips {
         foreach my $ip (split(/\s+/, $out)) {
             push @ips, $ip if $ip =~ /^\d+\.\d+\.\d+\.\d+$/;
         }
+
+		if (!@ips) {
+
+            my $hostname = `hostname`;
+            chomp($hostname);
+
+            my $host_out = `host $hostname 2>/dev/null`;
+
+            while ($host_out =~ /has addresses?\s+(\d+\.\d+\.\d+\.\d+)/g) {
+                push @ips, $1;
+            }
+        }
+		
 		if (!@ips) {
 
             	my $ifconfig_out = `/usr/sbin/ifconfig -a 2>/dev/null`;
